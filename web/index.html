@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17243d">
+  <title>CodeLens · 代码相似性分析</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/batch.css">
+  <link rel="stylesheet" href="/evidence.css">
+  <script src="/batch.js" defer></script>
+  <script src="/evidence.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-lens" viewBox="0 0 24 24"><path d="M8 4 2 12l6 8M16 4l6 8-6 8M14 5l-4 14"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6M12 7v5l3 2"/></symbol>
+    <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><path d="M6 7v10M18 7c0 6-12 3-12 8"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8l-5-5ZM14 3v5h5M8 13h8M8 17h6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 16v5h16v-5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-exit" viewBox="0 0 24 24"><path d="M10 4H4v16h6M10 12h11M17 8l4 4-4 4"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1ZM12 5v15"/></symbol>
+  </svg>
+  <section id="auth-screen" class="auth-screen" hidden>
+    <div class="auth-story">
+      <a class="brand" href="/"><span class="brand-icon"><svg><use href="#i-lens"/></svg></span>CodeLens<span class="brand-tag">代码透镜</span></a>
+      <div class="story-content">
+        <div class="eyebrow">让代码的联系，清晰可见</div>
+        <h1>从相似的代码，<br>找到值得复核的证据。</h1>
+        <p>一次检查同仓库的多个毕业作品分支。<br>扣除教师模板，用矩阵和原文证据定位复核对象。</p>
+        <div class="code-visual" aria-label="示意：变量改名后，结构仍然相似">
+          <div class="visual-head"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>结构相似 · 原文可追溯</span></div>
+          <div class="visual-body"><div class="visual-code"><span class="code-note">来源 A / original</span><code><b>function</b> total(prices) {<br>&nbsp; <b>return</b> prices.reduce(<br>&nbsp; &nbsp; (sum, item) =&gt; sum + item, 0<br>&nbsp; );<br>}</code></div><div class="visual-link">↔</div><div class="visual-code"><span class="code-note">来源 B / renamed</span><code><b>function</b> calculate(items) {<br>&nbsp; <b>return</b> items.reduce(<br>&nbsp; &nbsp; (result, value) =&gt; result + value, 0<br>&nbsp; );<br>}</code></div></div>
+        </div>
+        <div class="story-features"><span>◎ 多语言分析</span><span>↗ 分支版本追溯</span><span>▤ 离线 HTML 报告</span></div>
+      </div>
+      <p class="story-footer">相似性是一条线索，判断来自上下文。</p>
+    </div>
+    <div class="auth-form-area">
+      <div class="auth-box">
+        <span class="pill">本地工作空间</span>
+        <h2 id="auth-title">欢迎回来</h2>
+        <p id="auth-subtitle">登录，开始一次有据可查的代码分析。</p>
+        <form id="auth-form">
+          <label for="username">用户名</label>
+          <input id="username" name="username" autocomplete="username" minlength="3" maxlength="40" pattern="[a-zA-Z0-9_.-]{3,40}" placeholder="例如 reviewer" required>
+          <label for="password">密码</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" minlength="1" maxlength="128" placeholder="请输入密码" required>
+          <p id="auth-error" class="error-text" role="alert"></p>
+          <button id="auth-submit" class="button primary wide" type="submit">登录工作台 <svg><use href="#i-arrow"/></svg></button>
+        </form>
+        <p class="auth-switch"><span id="auth-switch-copy">第一次使用？</span><button id="auth-toggle" class="text-button">创建账号</button></p>
+        <div class="auth-bottom"><svg><use href="#i-info"/></svg><p>账号与报告保存在本机。<br>每个账号只可访问自己创建的任务。</p></div>
+        <a href="/prd/prd.html" target="_blank" rel="noopener" class="subtle-link">阅读产品需求说明书 ↗</a>
+      </div>
+    </div>
+  </section>
+  <div id="app-screen" class="app-screen" hidden>
+    <aside class="sidebar">
+      <a class="brand" href="/"><span class="brand-icon"><svg><use href="#i-lens"/></svg></span>CodeLens</a>
+      <span class="workspace-label">个人工作空间</span>
+      <nav aria-label="主导航">
+        <button data-view="new" class="nav-item active"><svg><use href="#i-grid"/></svg>分析工作台</button>
+        <button data-view="history" class="nav-item"><svg><use href="#i-history"/></svg>分析记录 <span id="history-count" class="nav-count">0</span></button>
+        <a class="nav-item" href="/prd/prd.html" target="_blank" rel="noopener"><svg><use href="#i-book"/></svg>产品需求说明 ↗</a>
+      </nav>
+      <div class="sidebar-tip"><svg><use href="#i-lens"/></svg><strong>把结论建立在证据上</strong><p>名称可以变化，结构会留下线索。结合代码来源与使用背景复核每一处匹配。</p><span>同语言 · 连续片段检测</span></div>
+      <div class="sidebar-bottom"><span class="online-dot"></span> 本地服务 <span class="version">v2.0</span></div>
+    </aside>
+    <div class="main-shell">
+      <header class="topbar"><div><span class="breadcrumb">工作空间</span><span class="slash">/</span><strong id="page-label">分析工作台</strong></div><div class="user-menu"><span class="local-label"><span class="online-dot"></span> 本地运行</span><span id="avatar" class="avatar">U</span><span id="user-label"></span><button id="logout" class="icon-button" title="退出登录" aria-label="退出登录"><svg><use href="#i-exit"/></svg></button></div></header>
+      <main id="workspace" class="workspace">
+        <section id="new-view">
+          <div class="page-heading"><div><div class="eyebrow">GRADUATION PROJECTS / 毕业实习作品</div><h1>全班作品，一次复核。</h1><p>同仓库选择 2–100 个学生分支，从相似度矩阵定位代码证据。</p></div><div class="heading-actions"><button id="batch-demo-button" class="button primary">体验 50 分支示例</button><button id="demo-button" class="button secondary">双版本示例</button></div></div>
+          <div class="section-tabs"><button class="selected">新建分析</button><button data-view="history">分析记录 <span id="tab-count">0</span></button><span class="tabs-note"><svg><use href="#i-info"/></svg>代码只读取，不执行</span></div>
+          <div class="batch-mode"><button type="button" data-mode="batch" class="button primary">毕业作品批量查重</button><button type="button" data-mode="pair" class="button secondary">双版本分析</button></div>
+          <form id="analysis-form">
+            <div id="batch-controls"></div>
+            <div id="pair-sources" hidden>
+            <div class="section-title"><div class="step-number">01</div><div><h2>选择两个代码来源</h2><p>支持 GitHub、GitLab、Gitee 及其他公开 HTTPS Git 地址。</p></div><span class="tag neutral">仓库 × 分支</span></div>
+            <div class="source-grid">
+              <section class="source-card"><div class="source-head"><span class="source-mark">A</span><div><h3>来源 A</h3><p>选择第一个代码版本</p></div><svg><use href="#i-branch"/></svg></div><label for="a-url">Git 仓库地址 <span class="required">*</span></label><div class="input-icon"><svg><use href="#i-branch"/></svg><input id="a-url" type="url" placeholder="https://github.com/owner/repository.git" required maxlength="1000"></div><label for="a-branch">分支 <span class="label-note">可选</span></label><input id="a-branch" placeholder="留空使用默认分支，如 main" maxlength="200"><details class="credentials"><summary>私有仓库访问凭据</summary><label for="a-username">Git 用户名</label><input id="a-username" placeholder="GitHub 可留空；GitLab 可填 oauth2" autocomplete="off" maxlength="4096"><label for="a-token">访问令牌</label><input id="a-token" type="password" placeholder="只用于此次分析，不保存" autocomplete="off" maxlength="4096"></details></section>
+              <div class="source-connector" aria-hidden="true">↔</div>
+              <section class="source-card source-b"><div class="source-head"><span class="source-mark">B</span><div><h3>来源 B</h3><p>选择需要一起比较的版本</p></div><svg><use href="#i-branch"/></svg></div><label for="b-url">Git 仓库地址 <span class="required">*</span></label><div class="input-icon"><svg><use href="#i-branch"/></svg><input id="b-url" type="url" placeholder="https://github.com/owner/repository.git" required maxlength="1000"></div><label for="b-branch">分支 <span class="label-note">可选</span></label><input id="b-branch" placeholder="同仓库可填写其他分支，如 feature" maxlength="200"><details class="credentials"><summary>私有仓库访问凭据</summary><label for="b-username">Git 用户名</label><input id="b-username" placeholder="GitHub 可留空；GitLab 可填 oauth2" autocomplete="off" maxlength="4096"><label for="b-token">访问令牌</label><input id="b-token" type="password" placeholder="只用于此次分析，不保存" autocomplete="off" maxlength="4096"></details></section>
+            </div>
+            <div class="form-hint"><svg><use href="#i-info"/></svg>两个来源地位对等。可以是同仓库的不同分支，也可以是两个不同仓库。</div>
+            </div>
+            <div class="section-title second"><div class="step-number">02</div><div><h2>设置检测规则</h2><p>保留结构线索，同时减少无关差异。</p></div><span class="tag neutral">可解释的词法比对</span></div>
+            <div class="options-grid">
+              <label class="option-card"><div class="option-top"><span class="option-icon">Aa</span><input id="normalize-identifiers" type="checkbox" checked><span class="switch"></span></div><strong>忽略标识符改名</strong><p>变量、函数改名后，仍寻找相同结构。关键字与运算符保留。</p><span class="option-foot">默认开启 · 需结合语境复核</span></label>
+              <label class="option-card"><div class="option-top"><span class="option-icon teal">123</span><input id="normalize-literals" type="checkbox"><span class="switch"></span></div><strong>忽略字面量变化</strong><p>把字符串、数值的修改视为候选相似，扩大检测范围。</p><span class="option-foot">默认关闭 · 可能增加常见写法匹配</span></label>
+              <div class="option-card"><div class="option-top"><span class="option-icon gold">≋</span><span class="tag neutral">12–100</span></div><label for="min-match" class="option-label">最小连续片段长度</label><div class="number-input"><input id="min-match" type="number" value="24" min="12" max="100" required><span>有效 token</span></div><p>越小越容易匹配短片段，也更容易匹配模板。空白与注释不计入。</p></div>
+            </div>
+            <details class="advanced"><summary><svg><use href="#i-plus"/></svg>更多设置 <span>任务名称与排除路径</span></summary><div class="advanced-content"><label for="task-name">任务名称<input id="task-name" maxlength="80" placeholder="可选，例如支付模块分支检查"></label><label for="excludes">排除路径<textarea id="excludes" rows="3" placeholder="每行一个 glob，例如 tests/** 或 **/*.generated.js"></textarea></label><p>默认跳过依赖、构建产物、锁文件与压缩文件。跳过内容会在结果中列明。</p></div></details>
+            <p id="form-error" class="error-text" role="alert"></p>
+            <div class="submit-row"><div><span class="supported-label">主流语言支持</span><div class="language-chips"><span>Java</span><span>JS / TS</span><span>HTML</span><span>C / C++</span><span>C#</span><span>PHP</span><span>+ 更多</span></div></div><button id="submit-analysis" class="button primary" type="submit">开始分析 <svg><use href="#i-arrow"/></svg></button></div>
+          </form>
+          <div class="bottom-note"><svg><use href="#i-info"/></svg><p>相似覆盖比例用于定位值得复核的代码，不能单独证明抄袭。函数与连续片段整体换序可检测；任意语句重排和跨语言语义属于后续能力。</p><a href="/prd/prd.html#FR-05" target="_blank" rel="noopener">了解检测口径 ↗</a></div>
+        </section>
+        <section id="history-view" hidden><div class="page-heading"><div><div class="eyebrow">ANALYSIS HISTORY / 分析记录</div><h1>每次分析，都有迹可循。</h1><p>提交版本、检测规则与原始证据随任务保存。</p></div><button data-view="new" class="button primary"><svg><use href="#i-plus"/></svg>新建分析</button></div><div id="history-content"></div></section>
+        <section id="result-view" hidden><div id="result-content"></div></section>
+      </main>
+      <footer class="app-footer"><span>CodeLens · 用代码证据理解相似性</span><span>本地首版 / 同语言连续片段检测</span></footer>
+    </div>
+  </div>
+  <div id="loading-screen" class="initial-loading"><span class="spinner"></span><p>正在打开工作空间…</p></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

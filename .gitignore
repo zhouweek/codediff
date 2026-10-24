@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.DS_Store
+node_modules/
+*.sqlite3*
+.env
+.trae-html-share-packages/
+reports/batch-50-package/
